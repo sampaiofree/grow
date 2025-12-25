@@ -105,11 +105,14 @@ class WebhookController extends Controller
     }
 
     public function webMany(Request $request){
+        $phone = $this->normalizePhone($request->phone ?? '');
+        $whatsapp = $this->normalizePhone($request->whatsapp_phone ?? $request->phone ?? '');
+
         $data = [
             "first_name"=> $request->first_name ?? "",
             "last_name"=> $request->last_name ?? "",
-            "phone"=> $request->phone ?? "",
-            "whatsapp_phone"=> $request->whatsapp_phone ?? $request->phone ?? "",
+            "phone"=> $phone,
+            "whatsapp_phone"=> $whatsapp,
             "email"=> $request->email ?? "",
             "boleto_link" => $request->boleto_link ?? "",
             "pix_codigo" => $request->pix_codigo ?? "",
@@ -579,7 +582,8 @@ class WebhookController extends Controller
             'data' => $data,
         ]);
 
-        return $this->webMany(new Request([], $data));
+        $mappedRequest = Request::create('/', 'POST', $data);
+        return $this->webMany($mappedRequest);
     }
 
     private function mapToWebManyPayload(array $payload, $mappings): array
@@ -655,5 +659,23 @@ class WebhookController extends Controller
             'value_preview' => is_scalar($value) ? (string) $value : gettype($value),
         ]);
         return $value;
+    }
+
+    private function normalizePhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '55')) {
+            return $digits;
+        }
+
+        if (strlen($digits) === 10 || strlen($digits) === 11) {
+            return '55'.$digits;
+        }
+
+        return $digits;
     }
 }
