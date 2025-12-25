@@ -12,16 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('app_id')->nullable();
-            $table->string('app_secret')->nullable();
-            $table->string('meta_conta_de_anuncios')->nullable();
+            if (!Schema::hasColumn('users', 'app_id')) {
+                $table->string('app_id')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'app_secret')) {
+                $table->string('app_secret')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'meta_conta_de_anuncios')) {
+                $table->string('meta_conta_de_anuncios')->nullable();
+            }
         });
 
         Schema::table('doppus_produtor', function (Blueprint $table) {
-            $table->foreignId('user_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
+            if (!Schema::hasColumn('doppus_produtor', 'user_id')) {
+                $table->foreignId('user_id')
+                    ->nullable()
+                    ->constrained()
+                    ->nullOnDelete();
+            }
         });
     }
 
@@ -31,11 +39,21 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('doppus_produtor', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('user_id');
+            if (Schema::hasColumn('doppus_produtor', 'user_id')) {
+                $table->dropConstrainedForeignId('user_id');
+            }
         });
 
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['app_id', 'app_secret', 'meta_conta_de_anuncios']);
+            $columns = array_filter([
+                Schema::hasColumn('users', 'app_id') ? 'app_id' : null,
+                Schema::hasColumn('users', 'app_secret') ? 'app_secret' : null,
+                Schema::hasColumn('users', 'meta_conta_de_anuncios') ? 'meta_conta_de_anuncios' : null,
+            ]);
+
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };
