@@ -24,4 +24,18 @@ class UserController extends Controller
         // Redireciona de volta com uma mensagem de sucesso
         return redirect()->back()->with('success', 'App ID atualizado com sucesso!');
     }
+
+    public function updateManyAccessToken(Request $request)
+    {
+        $request->validate([
+            'many_access_token' => 'nullable|string|max:512',
+        ]);
+
+        $user = Auth::user();
+        $token = trim((string) $request->input('many_access_token'));
+        $user->many_access_token = $token === '' ? null : $token;
+        $user->save();
+
+        return redirect()->back()->with('success', 'Token do ManyChat atualizado com sucesso!');
+    }
 }

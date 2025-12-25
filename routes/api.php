@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebhookController;
+use App\Models\WebhookEndpoint;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -27,3 +28,8 @@ Route::get('/teste', function () {
 
 // COMPRAS DO GROW / EVENTOS RECEBIDOS DA DOPPUS
 //Route::post('/doppus/{user_id?}', [WebhookController::class, 'webhook_doppus_produtor']);
+
+// Webhook público para endpoints declarativos
+Route::post('/webhook/{uuid}', [WebhookController::class, 'handleMappedWebhook'])
+    ->middleware('throttle:60,1')
+    ->name('webhooks.public');

@@ -12,12 +12,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Exception;
 use Illuminate\Support\Facades\Http;
+use App\Models\WebhookEndpoint;
 
 class WebhookController extends Controller
 {
     protected $many_access_token;
 
-    public function many($dados=null){
+    public function many($dados=null){ 
 
         //VERIFICAR SE JÁ EXISTE USUÁRIO
         $usuario = $this->manygetid($dados['email']);
@@ -101,6 +102,28 @@ class WebhookController extends Controller
                 ], $response->status());
             }
         }
+    }
+
+    public function webMany(Request $request){
+        $data = [
+            "first_name"=> $request->first_name ?? "",
+            "last_name"=> $request->last_name ?? "",
+            "phone"=> $request->phone ?? "",
+            "whatsapp_phone"=> $request->whatsapp_phone ?? $request->phone ?? "",
+            "email"=> $request->email ?? "",
+            "boleto_link" => $request->boleto_link ?? "",
+            "pix_codigo" => $request->pix_codigo ?? "",
+            "produto_nome" => $request->produto_nome ?? "",
+            "produto_valor" => $request->produto_valor ?? "",
+            "recuperacao_url" => $request->recuperacao_url ?? "",
+            "transacao_codigo" => $request->transacao_codigo ?? "",
+            "status" => $request->status ?? "",
+            "cliente_email" => $request->cliente_email ?? "",
+            "cliente_senha" =>  $request->cliente_senha ?? "",
+            "links_member" => $request->links_member ?? "",
+        ];
+
+        return $this->many($data);
     }
 
     public function manyFiel($id = null, $dados = null){
@@ -503,5 +526,94 @@ class WebhookController extends Controller
 
 
         return response()->json(['message' => 'Dados recebidos e salvos com sucesso'], 201);
+    }
+
+    /**
+     * Rota pública de webhook para endpoints declarativos.
+     * Salva o payload recebido em last_test_payload do endpoint.
+     */
+    public function handleMappedWebhook(Request $request, string $uuid)
+    {
+        $endpoint = WebhookEndpoint::with(['user', 'mappings'])
+            ->where('uuid', $uuid)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $endpoint) {
+            return response()->json(['message' => 'Endpoint não encontrado ou inativo'], 404);
+        }
+
+        $endpoint->last_test_payload = $request->all();
+        $endpoint->save();
+
+        $user = $endpoint->user;
+        if (! $user || empty($user->many_access_token)) {
+            return response()->json(['message' => 'Token do ManyChat não configurado'], 422);
+        }
+
+        $this->many_access_token = $user->many_access_token;
+
+        $data = $this->mapToWebManyPayload($request->all(), $endpoint->mappings);
+
+        return $this->webMany(new Request([], $data));
+    }
+
+    private function mapToWebManyPayload(array $payload, $mappings): array
+    {
+        $targets = [
+            'first_name', 'last_name', 'phone', 'whatsapp_phone', 'email',
+            'boleto_link', 'pix_codigo', 'produto_nome', 'produto_valor',
+            'recuperacao_url', 'transacao_codigo', 'status',
+            'cliente_email', 'cliente_senha', 'links_member',
+        ];
+
+        $mappingByTarget = $mappings->keyBy('target_key');
+        $data = [];
+
+        foreach ($targets as $target) {
+            $mapping = $mappingByTarget->get($target);
+            $paths = $mapping?->source_paths ?? [];
+            $delimiter = $mapping?->delimiter ?? ' ';
+
+            $values = [];
+            foreach ($paths as $path) {
+                $value = $this->getValueByPath($payload, $path);
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+
+            $data[$target] = $values ? implode($delimiter, $values) : '';
+        }
+
+        return $data;
+    }
+
+    private function getValueByPath(array $payload, string $path)
+    {
+        $segments = explode('.', $path);
+        $value = $payload;
+
+        foreach ($segments as $segment) {
+            if (is_array($value) && array_key_exists($segment, $value)) {
+                $value = $value[$segment];
+                continue;
+            }
+
+            if (is_array($value) && ctype_digit($segment)) {
+                $index = (int) $segment;
+                if (array_key_exists($index, $value)) {
+                    $value = $value[$index];
+                    continue;
+                }
+            }
+
+            return null;
+        }
+
+        return $value;
     }
 }

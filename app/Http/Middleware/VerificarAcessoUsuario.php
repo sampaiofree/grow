@@ -32,6 +32,9 @@ class VerificarAcessoUsuario
 
          // Verifica se o usuário está autenticado
          if ($user) {
+            if ($user->is_admin) {
+                return $next($request);
+            }
 
              // Procura na tabela DoppusProdutor o registro com customer_email e items_code especificados
              $usuario = DoppusProdutor::where('customer_email', $user->email)
@@ -41,12 +44,14 @@ class VerificarAcessoUsuario
  
             //dd($usuario); exit;
             
-            if(isset($usuario['status_code']) AND $usuario['status_code']=="approved" OR $usuario['status_code']=="complete"){
+            $status = $usuario?->status_code;
+
+            if ($status === "approved" || $status === "complete") {
                 //dd($usuario); exit;
                 return $next($request);
             }
 
-            if(isset($usuario['status_code']) AND $usuario['status_code']!="approved"){                
+            if ($status !== null && $status !== "approved") {
                 Auth::logout();
                 return redirect()->route('login')->with('error', $usuario->status_message);
             }

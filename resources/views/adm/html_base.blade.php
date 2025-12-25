@@ -516,12 +516,26 @@
                     </div>
                 </li>
 
+                <li class="side-nav-item">
+                    <a class="side-nav-link" data-bs-toggle="modal" data-bs-target="#modal_manychat_token" style="cursor: pointer;">
+                        <i class="ri-message-3-fill"></i>
+                        <span> ManyChat </span>
+                    </a>
+                </li>
+
                 <!--<li class="side-nav-item">
                     <a href="#" class="side-nav-link">
                         <i class="ri-user-follow-fill"></i>
                         <span> Leads </span>
                     </a>
                 </li>-->
+
+                <li class="side-nav-item">
+                    <a href="{{ route('webhooks.index') }}" class="side-nav-link">
+                        <i class="uil-link-alt"></i>
+                        <span> Webhooks </span>
+                    </a>
+                </li>
             </ul>
             <!--- End Sidemenu -->
 
@@ -1298,6 +1312,34 @@
                 </div>
             </form>
             
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div id="modal_manychat_token" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="manychatTokenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manychatTokenModalLabel">Token do ManyChat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('users.updateManyAccessToken') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    @if (Auth::user()->many_access_token)
+                        <p class="text-muted mb-2">Token cadastrado (final {{ substr(Auth::user()->many_access_token, -4) }}).</p>
+                    @endif
+                    <div class="">
+                        <label for="manyAccessToken" class="form-label">Token</label>
+                        <input type="password" class="form-control" id="manyAccessToken" name="many_access_token" placeholder="Cole o token do ManyChat">
+                    </div>
+                    <small class="text-muted d-block mt-2">Deixe em branco para remover o token.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->

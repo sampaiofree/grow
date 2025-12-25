@@ -1,16 +1,16 @@
 <?php
-use Illuminate\Http\Request;
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UtmController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WebhookEndpointController;
+use App\Http\Controllers\WebhookEndpointMappingController;
 
 use App\Http\Controllers\WebhookController;
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 use App\Http\Middleware\VerificarAcessoUsuario;
 
@@ -34,6 +34,14 @@ Route::middleware(['auth', 'verified', VerificarAcessoUsuario::class])->prefix('
     Route::post('/facebook/login', [FacebookController::class, 'login'])->name('facebook.login');
 
     Route::post('/users/update-app-id', [UserController::class, 'updateAppId'])->name('users.updateAppId');
+    Route::post('/users/update-many-access-token', [UserController::class, 'updateManyAccessToken'])->name('users.updateManyAccessToken');
+
+    Route::get('/webhooks', [WebhookEndpointController::class, 'index'])->name('webhooks.index');
+    Route::post('/webhooks', [WebhookEndpointController::class, 'store'])->name('webhooks.store');
+    Route::post('/webhooks/{endpoint}', [WebhookEndpointController::class, 'update'])->name('webhooks.update');
+    Route::get('/webhooks/{endpoint}', [WebhookEndpointController::class, 'show'])->name('webhooks.show');
+    Route::post('/webhooks/{endpoint}/test', [WebhookEndpointController::class, 'saveTestPayload'])->name('webhooks.test');
+    Route::post('/webhooks/{endpoint}/mappings', [WebhookEndpointMappingController::class, 'store'])->name('webhooks.mappings.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -46,19 +54,3 @@ Route::middleware('auth')->group(function () {
 Route::get('/comprar_assinatura', function () {
     return redirect()->away('https://checkout.growtrackeamento.com.br/52840571'); // Substitua com o link externo desejado
 })->name('comprar_assinatura');
-
-//ENVRIO DE EMAIL 
-Route::get('/email/verify', function () {
-    return view('auth.verify-email');
-})->middleware('auth')->name('verification.notice');
-
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-
-    return redirect('/dashboard');
-})->middleware(['auth', 'signed'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('message', 'Email de verificação reenviado!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');

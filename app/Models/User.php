@@ -24,7 +24,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'app_id',
         'app_secret',
-        'meta_conta_de_anuncios'
+        'meta_conta_de_anuncios',
+        'many_access_token',
+        'is_admin'
     ];
 
     /**
@@ -47,6 +49,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
+            'many_access_token' => 'encrypted',
         ];
     }
 }
