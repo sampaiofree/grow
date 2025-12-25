@@ -19,9 +19,8 @@ class WebhookEndpointMappingController extends Controller
             'cliente_email', 'cliente_senha', 'links_member',
         ];
 
-        $data = $request->validate([
+        $request->validate([
             'mappings' => 'required|array',
-            'mappings.*.target_key' => 'required|string|in:'.implode(',', $targets),
             'mappings.*.source_paths' => 'nullable|array',
             'mappings.*.source_paths.*' => 'string',
             'mappings.*.delimiter' => 'nullable|string|max:5',
@@ -30,11 +29,16 @@ class WebhookEndpointMappingController extends Controller
         // Apaga mappings antigos e recria
         $endpoint->mappings()->delete();
 
-        foreach ($data['mappings'] as $map) {
+        foreach ($targets as $target) {
+            $paths = $request->input("mappings.$target.source_paths", []);
+            $paths = is_array($paths) ? $paths : [$paths];
+            $delimiterInput = $request->input("mappings.$target.delimiter");
+            $delimiter = $delimiterInput === null ? ' ' : $delimiterInput;
+
             $endpoint->mappings()->create([
-                'target_key' => $map['target_key'],
-                'source_paths' => $map['source_paths'] ?? [],
-                'delimiter' => $map['delimiter'] ?? ' ',
+                'target_key' => $target,
+                'source_paths' => $paths,
+                'delimiter' => $delimiter,
             ]);
         }
 

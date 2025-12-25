@@ -72,7 +72,7 @@
                                                 <span class="badge bg-primary d-inline-flex align-items-center">
                                                     <span class="me-1">{{ $sel }}</span>
                                                     <button type="button" class="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" data-remove-badge></button>
-                                                    <input type="hidden" name="mappings[{{ $loop->index }}][source_paths][]" value="{{ $sel }}">
+                                                    <input type="hidden" name="mappings[{{ $target }}][source_paths][]" value="{{ $sel }}">
                                                 </span>
                                             @endforeach
                                         </div>
@@ -90,10 +90,9 @@
                                             <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
                                         @endif
                                     </div>
-                                    <input type="hidden" name="mappings[{{ $loop->index }}][target_key]" value="{{ $target }}">
                                     <div class="mt-1 d-flex align-items-center gap-2">
                                         <span class="text-muted small">Separador</span>
-                                        <select class="form-select form-select-sm" style="width: 80px;" name="mappings[{{ $loop->index }}][delimiter]">
+                                        <select class="form-select form-select-sm" style="width: 80px;" name="mappings[{{ $target }}][delimiter]">
                                             @php $delimiters = [' ' => 'Espaço', ',' => 'Vírgula', '-' => 'Hífen']; @endphp
                                             <option value="" {{ $delimiter === '' ? 'selected' : '' }}>Nenhum</option>
                                             @foreach($delimiters as $char => $label)
@@ -118,11 +117,6 @@
 @section('body_end')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // indexa os containers para manter o name correto dos inputs
-    document.querySelectorAll('[data-badges]').forEach((container, idx) => {
-        container.dataset.index = idx;
-    });
-
     const addBadge = (target, value) => {
         if (!value) return;
         const badges = document.querySelector(`[data-badges="${target}"]`);
@@ -136,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         span.className = 'badge bg-primary d-inline-flex align-items-center';
         span.innerHTML = `<span class="me-1">${value}</span>
                           <button type="button" class="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" data-remove-badge></button>
-                          <input type="hidden" name="mappings[${badges.dataset.index || 0}][source_paths][]" value="${value}">`;
+                          <input type="hidden" name="mappings[${target}][source_paths][]" value="${value}">`;
         badges.appendChild(span);
     };
 
