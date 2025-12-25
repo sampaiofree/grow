@@ -123,6 +123,13 @@ class WebhookController extends Controller
             "links_member" => $request->links_member ?? "",
         ];
 
+        Log::info('webMany payload preparado', [
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'keys' => array_keys($data),
+        ]);
+        Log::debug('webMany payload completo', ['data' => $data]);
+
         return $this->many($data);
     }
 
@@ -534,12 +541,21 @@ class WebhookController extends Controller
      */
     public function handleMappedWebhook(Request $request, string $uuid)
     {
+        $payload = $request->all();
+        Log::info('Webhook recebido', [
+            'uuid' => $uuid,
+            'ip' => $request->ip(),
+            'payload_keys' => array_keys($payload),
+        ]);
+        Log::debug('Webhook payload bruto', ['payload' => $payload]);
+
         $endpoint = WebhookEndpoint::with(['user', 'mappings'])
             ->where('uuid', $uuid)
             ->where('is_active', true)
             ->first();
 
         if (! $endpoint) {
+            Log::warning('Endpoint não encontrado ou inativo', ['uuid' => $uuid]);
             return response()->json(['message' => 'Endpoint não encontrado ou inativo'], 404);
         }
 
@@ -548,12 +564,20 @@ class WebhookController extends Controller
 
         $user = $endpoint->user;
         if (! $user || empty($user->many_access_token)) {
+            Log::warning('Token ManyChat não configurado', [
+                'endpoint_id' => $endpoint->id,
+                'user_id' => $user?->id,
+            ]);
             return response()->json(['message' => 'Token do ManyChat não configurado'], 422);
         }
 
         $this->many_access_token = $user->many_access_token;
 
         $data = $this->mapToWebManyPayload($request->all(), $endpoint->mappings);
+        Log::debug('Payload mapeado para webMany', [
+            'endpoint_id' => $endpoint->id,
+            'data' => $data,
+        ]);
 
         return $this->webMany(new Request([], $data));
     }
@@ -587,6 +611,14 @@ class WebhookController extends Controller
             }
 
             $data[$target] = $values ? implode($delimiter, $values) : '';
+
+            Log::debug('Mapeamento aplicado', [
+                'target' => $target,
+                'paths' => $paths,
+                'delimiter' => $delimiter,
+                'values' => $values,
+                'result' => $data[$target],
+            ]);
         }
 
         return $data;
@@ -611,9 +643,17 @@ class WebhookController extends Controller
                 }
             }
 
+            Log::debug('Path não encontrado no payload', [
+                'path' => $path,
+                'segment' => $segment,
+            ]);
             return null;
         }
 
+        Log::debug('Path resolvido no payload', [
+            'path' => $path,
+            'value_preview' => is_scalar($value) ? (string) $value : gettype($value),
+        ]);
         return $value;
     }
 }
