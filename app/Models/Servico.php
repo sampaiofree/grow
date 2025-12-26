@@ -26,4 +26,9 @@ class Servico extends Model
     {
         return $this->hasMany(ServicoCampoObrigatorio::class);
     }
+
+    public function webhookEndpoints(): HasMany
+    {
+        return $this->hasMany(WebhookEndpoint::class);
+    }
 }

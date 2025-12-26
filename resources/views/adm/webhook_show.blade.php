@@ -311,7 +311,7 @@
                             <button type="submit" class="btn btn-primary">Salvar mapeamento</button>
                         </div>
                     </form>
-                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam índice 0 (ex.: items.0.name). Se não mapear um campo, enviaremos vazio.</p>
+                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Se nao mapear um campo, enviaremos vazio.</p>
                 </div>
             </div>
         </div>

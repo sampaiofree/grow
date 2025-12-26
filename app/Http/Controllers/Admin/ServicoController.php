@@ -14,7 +14,9 @@ class ServicoController extends Controller
 {
     public function index(): View
     {
-        $servicos = Servico::orderBy('nome')->get();
+        $servicos = Servico::withCount(['camposObrigatorios', 'webhookEndpoints'])
+            ->orderBy('nome')
+            ->get();
 
         return view('adm.servicos.index', compact('servicos'));
     }
@@ -49,6 +51,13 @@ class ServicoController extends Controller
         $servico->update($data);
 
         return to_route('admin.servicos.index')->with('success', 'Serviço atualizado com sucesso.');
+    }
+
+    public function destroy(Servico $servico): RedirectResponse
+    {
+        $servico->delete();
+
+        return to_route('admin.servicos.index')->with('success', 'Servico excluido com sucesso.');
     }
 
     protected function validateServico(Request $request, ?Servico $servico = null): array

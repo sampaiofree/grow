@@ -13,6 +13,7 @@ use Illuminate\Database\QueryException;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use App\Models\WebhookEndpoint;
+use App\Services\Contracts\WebhookHandlerInterface;
 
 class WebhookController extends Controller
 {
@@ -544,7 +545,12 @@ class WebhookController extends Controller
      */
     public function handleMappedWebhook(Request $request, string $uuid)
     {
-        $payload = $request->all();
+        $payload = $this->extractPayload($request);
+        if ($payload === null) {
+            Log::warning('Payload invalido recebido', ['uuid' => $uuid]);
+            return response()->json(['message' => 'Payload invalido'], 400);
+        }
+
         Log::info('Webhook recebido', [
             'uuid' => $uuid,
             'ip' => $request->ip(),
@@ -552,113 +558,175 @@ class WebhookController extends Controller
         ]);
         Log::debug('Webhook payload bruto', ['payload' => $payload]);
 
-        $endpoint = WebhookEndpoint::with(['user', 'mappings'])
+        $endpoint = WebhookEndpoint::with(['user', 'mappings', 'servico'])
             ->where('uuid', $uuid)
             ->where('is_active', true)
             ->first();
 
         if (! $endpoint) {
-            Log::warning('Endpoint não encontrado ou inativo', ['uuid' => $uuid]);
-            return response()->json(['message' => 'Endpoint não encontrado ou inativo'], 404);
+            Log::warning('Endpoint nao encontrado ou inativo', ['uuid' => $uuid]);
+            return response()->json(['message' => 'Endpoint nao encontrado ou inativo'], 404);
         }
 
-        $endpoint->last_test_payload = $request->all();
+        if (! $endpoint->servico || ! $endpoint->servico->ativo) {
+            Log::warning('Servico inativo ou nao encontrado', [
+                'endpoint_id' => $endpoint->id,
+                'servico_id' => $endpoint->servico_id,
+            ]);
+            return response()->json(['message' => 'Servico inativo ou nao encontrado'], 422);
+        }
+
+        $endpoint->last_test_payload = $payload;
         $endpoint->save();
 
-        $user = $endpoint->user;
-        if (! $user || empty($user->many_access_token)) {
-            Log::warning('Token ManyChat não configurado', [
-                'endpoint_id' => $endpoint->id,
-                'user_id' => $user?->id,
-            ]);
-            return response()->json(['message' => 'Token do ManyChat não configurado'], 422);
-        }
-
-        $this->many_access_token = $user->many_access_token;
-
-        $data = $this->mapToWebManyPayload($request->all(), $endpoint->mappings);
-        Log::debug('Payload mapeado para webMany', [
+        $data = $this->mapPayloadByMappings($payload, $endpoint->mappings);
+        Log::debug('Payload mapeado para servico', [
             'endpoint_id' => $endpoint->id,
             'data' => $data,
         ]);
 
-        $mappedRequest = Request::create('/', 'POST', $data);
-        return $this->webMany($mappedRequest);
+        $handlerClass = $this->resolveHandlerClass((string) $endpoint->servico->handler_class);
+        if ($handlerClass === '' || ! class_exists($handlerClass)) {
+            Log::error('Handler nao encontrado', [
+                'endpoint_id' => $endpoint->id,
+                'handler_class' => $handlerClass,
+            ]);
+            return response()->json(['message' => 'Handler nao encontrado'], 422);
+        }
+
+        $handler = app($handlerClass);
+        if (! $handler instanceof WebhookHandlerInterface) {
+            Log::error('Handler invalido para servico', [
+                'endpoint_id' => $endpoint->id,
+                'handler_class' => $handlerClass,
+            ]);
+            return response()->json(['message' => 'Handler invalido para servico'], 422);
+        }
+
+        return $handler->handle($endpoint, $data);
     }
 
-    private function mapToWebManyPayload(array $payload, $mappings): array
+    private function extractPayload(Request $request): ?array
     {
-        $targets = [
-            'first_name', 'last_name', 'phone', 'whatsapp_phone', 'email',
-            'boleto_link', 'pix_codigo', 'produto_nome', 'produto_valor',
-            'recuperacao_url', 'transacao_codigo', 'status',
-            'cliente_email', 'cliente_senha', 'links_member',
-        ];
+        $payload = $request->all();
+        if (! empty($payload)) {
+            return $payload;
+        }
 
-        $mappingByTarget = $mappings->keyBy('target_key');
+        $raw = $request->getContent();
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+            return null;
+        }
+
+        return $decoded;
+    }
+
+    private function resolveHandlerClass(string $handlerClass): string
+    {
+        $handlerClass = trim($handlerClass);
+        if ($handlerClass === '') {
+            return '';
+        }
+
+        if (str_contains($handlerClass, '\\')) {
+            return $handlerClass;
+        }
+
+        return 'App\\Services\\'.$handlerClass;
+    }
+
+    private function mapPayloadByMappings(array $payload, $mappings): array
+    {
         $data = [];
 
-        foreach ($targets as $target) {
-            $mapping = $mappingByTarget->get($target);
-            $paths = $mapping?->source_paths ?? [];
-            $delimiter = $mapping?->delimiter ?? ' ';
+        foreach ($mappings as $mapping) {
+            $target = trim((string) $mapping->target_key);
+            if ($target === '') {
+                continue;
+            }
+
+            $paths = $mapping->source_paths ?? [];
+            $paths = is_array($paths) ? $paths : [$paths];
+
+            $delimiter = $mapping->delimiter;
+            if ($delimiter === null) {
+                $delimiter = ' ';
+            }
+            $delimiter = (string) $delimiter;
 
             $values = [];
             foreach ($paths as $path) {
-                $value = $this->getValueByPath($payload, $path);
-                if (is_array($value)) {
-                    $value = json_encode($value);
+                $path = trim((string) $path);
+                if ($path === '') {
+                    continue;
                 }
-                if ($value !== null && $value !== '') {
-                    $values[] = (string) $value;
+
+                $extracted = $this->getValuesByPath($payload, $path);
+                foreach ($extracted as $value) {
+                    if (is_array($value)) {
+                        $value = json_encode($value);
+                    }
+
+                    if ($value !== null && $value !== '') {
+                        $values[] = (string) $value;
+                    }
                 }
             }
 
-            $data[$target] = $values ? implode($delimiter, $values) : '';
-
-            Log::debug('Mapeamento aplicado', [
-                'target' => $target,
-                'paths' => $paths,
-                'delimiter' => $delimiter,
-                'values' => $values,
-                'result' => $data[$target],
-            ]);
+            if (! empty($values)) {
+                $data[$target] = implode($delimiter, $values);
+            }
         }
 
         return $data;
     }
 
-    private function getValueByPath(array $payload, string $path)
+    private function getValuesByPath(array $payload, string $path): array
     {
-        $segments = explode('.', $path);
-        $value = $payload;
+        $segments = $path === '' ? [] : explode('.', $path);
 
-        foreach ($segments as $segment) {
-            if (is_array($value) && array_key_exists($segment, $value)) {
-                $value = $value[$segment];
-                continue;
+        return $this->traversePath($payload, $segments);
+    }
+
+    private function traversePath($value, array $segments): array
+    {
+        if ($segments === []) {
+            return [$value];
+        }
+
+        $segment = array_shift($segments);
+        if ($segment === '*') {
+            if (! is_array($value)) {
+                return [];
             }
 
-            if (is_array($value) && ctype_digit($segment)) {
-                $index = (int) $segment;
-                if (array_key_exists($index, $value)) {
-                    $value = $value[$index];
-                    continue;
+            $results = [];
+            foreach ($value as $item) {
+                foreach ($this->traversePath($item, $segments) as $result) {
+                    $results[] = $result;
                 }
             }
 
-            Log::debug('Path não encontrado no payload', [
-                'path' => $path,
-                'segment' => $segment,
-            ]);
-            return null;
+            return $results;
         }
 
-        Log::debug('Path resolvido no payload', [
-            'path' => $path,
-            'value_preview' => is_scalar($value) ? (string) $value : gettype($value),
-        ]);
-        return $value;
+        if (is_array($value) && array_key_exists($segment, $value)) {
+            return $this->traversePath($value[$segment], $segments);
+        }
+
+        if (is_array($value) && ctype_digit($segment)) {
+            $index = (int) $segment;
+            if (array_key_exists($index, $value)) {
+                return $this->traversePath($value[$index], $segments);
+            }
+        }
+
+        return [];
     }
 
     private function normalizePhone(?string $phone): string

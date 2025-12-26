@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])
         Route::post('servicos', [ServicoController::class, 'store'])->name('servicos.store');
         Route::get('servicos/{servico}/edit', [ServicoController::class, 'edit'])->name('servicos.edit');
         Route::put('servicos/{servico}', [ServicoController::class, 'update'])->name('servicos.update');
+        Route::delete('servicos/{servico}', [ServicoController::class, 'destroy'])->name('servicos.destroy');
 
         Route::get('servicos/{servico}/campos', [ServicoCampoObrigatorioController::class, 'index'])
             ->name('servicos.campos.index');
