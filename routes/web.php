@@ -7,12 +7,15 @@ use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookEndpointController;
 use App\Http\Controllers\WebhookEndpointMappingController;
+use App\Http\Controllers\Admin\ServicoController;
+use App\Http\Controllers\Admin\ServicoCampoObrigatorioController;
 
 use App\Http\Controllers\WebhookController;
 
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Middleware\VerificarAcessoUsuario;
+use App\Http\Middleware\EnsureAdmin;
 
 require __DIR__.'/auth.php';
 Route::get('/many', [WebhookController::class, 'many'])->name('many'); 
@@ -42,7 +45,30 @@ Route::middleware(['auth', 'verified', VerificarAcessoUsuario::class])->prefix('
     Route::get('/webhooks/{endpoint}', [WebhookEndpointController::class, 'show'])->name('webhooks.show');
     Route::post('/webhooks/{endpoint}/test', [WebhookEndpointController::class, 'saveTestPayload'])->name('webhooks.test');
     Route::post('/webhooks/{endpoint}/mappings', [WebhookEndpointMappingController::class, 'store'])->name('webhooks.mappings.store');
+    Route::delete('/webhooks/{endpoint}', [WebhookEndpointController::class, 'destroy'])->name('webhooks.destroy');
 });
+
+Route::middleware(['auth', 'verified', EnsureAdmin::class])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('servicos', [ServicoController::class, 'index'])->name('servicos.index');
+        Route::get('servicos/create', [ServicoController::class, 'create'])->name('servicos.create');
+        Route::post('servicos', [ServicoController::class, 'store'])->name('servicos.store');
+        Route::get('servicos/{servico}/edit', [ServicoController::class, 'edit'])->name('servicos.edit');
+        Route::put('servicos/{servico}', [ServicoController::class, 'update'])->name('servicos.update');
+
+        Route::get('servicos/{servico}/campos', [ServicoCampoObrigatorioController::class, 'index'])
+            ->name('servicos.campos.index');
+        Route::get('servicos/{servico}/campos/create', [ServicoCampoObrigatorioController::class, 'create'])
+            ->name('servicos.campos.create');
+        Route::post('servicos/{servico}/campos', [ServicoCampoObrigatorioController::class, 'store'])
+            ->name('servicos.campos.store');
+        Route::get('servicos/{servico}/campos/{campo}/edit', [ServicoCampoObrigatorioController::class, 'edit'])
+            ->name('servicos.campos.edit');
+        Route::put('servicos/{servico}/campos/{campo}', [ServicoCampoObrigatorioController::class, 'update'])
+            ->name('servicos.campos.update');
+    });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

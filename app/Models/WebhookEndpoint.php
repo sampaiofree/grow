@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WebhookEndpoint extends Model
 {
@@ -17,6 +18,7 @@ class WebhookEndpoint extends Model
         'last_test_payload',
         'throttle_limit',
         'disabled_at',
+        'servico_id',
     ];
 
     protected function casts(): array
@@ -36,5 +38,10 @@ class WebhookEndpoint extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function servico(): BelongsTo
+    {
+        return $this->belongsTo(Servico::class);
     }
 }

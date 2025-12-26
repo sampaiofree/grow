@@ -536,6 +536,15 @@
                         <span> Webhooks </span>
                     </a>
                 </li>
+
+                @if(auth()->user()?->is_admin)
+                    <li class="side-nav-item">
+                        <a href="{{ route('admin.servicos.index') }}" class="side-nav-link">
+                            <i class="uil-cog"></i>
+                            <span> Serviços </span>
+                        </a>
+                    </li>
+                @endif
             </ul>
             <!--- End Sidemenu -->
 
