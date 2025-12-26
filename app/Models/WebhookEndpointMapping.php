@@ -14,12 +14,14 @@ class WebhookEndpointMapping extends Model
         'target_key',
         'source_paths',
         'delimiter',
+        'is_locked',
     ];
 
     protected function casts(): array
     {
         return [
             'source_paths' => 'array',
+            'is_locked' => 'boolean',
         ];
     }
 

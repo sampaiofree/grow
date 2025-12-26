@@ -12,34 +12,48 @@ class WebhookEndpointMappingController extends Controller
     {
         abort_if($endpoint->user_id !== Auth::id(), 403);
 
-        $targets = [
-            'first_name', 'last_name', 'phone', 'whatsapp_phone', 'email',
-            'boleto_link', 'pix_codigo', 'produto_nome', 'produto_valor',
-            'recuperacao_url', 'transacao_codigo', 'status',
-            'cliente_email', 'cliente_senha', 'links_member',
-        ];
-
         $request->validate([
             'mappings' => 'required|array',
+            'mappings.*.target_key' => 'required|string',
             'mappings.*.source_paths' => 'nullable|array',
             'mappings.*.source_paths.*' => 'string',
             'mappings.*.delimiter' => 'nullable|string|max:5',
+            'mappings.*.mapping_id' => 'nullable|integer',
+            'mappings.*.is_locked' => 'nullable|boolean',
         ]);
 
-        // Apaga mappings antigos e recria
-        $endpoint->mappings()->delete();
+        $deletedIds = array_filter((array) $request->input('deleted_mappings', []), 'is_numeric');
+        if (!empty($deletedIds)) {
+            $endpoint->mappings()
+                ->whereIn('id', $deletedIds)
+                ->where('is_locked', false)
+                ->delete();
+        }
 
-        foreach ($targets as $target) {
-            $paths = $request->input("mappings.$target.source_paths", []);
-            $paths = is_array($paths) ? $paths : [$paths];
-            $delimiterInput = $request->input("mappings.$target.delimiter");
-            $delimiter = $delimiterInput === null ? ' ' : $delimiterInput;
+        foreach ($request->input('mappings', []) as $mappingData) {
+            $target = trim($mappingData['target_key'] ?? '');
+            if ($target === '') {
+                continue;
+            }
 
-            $endpoint->mappings()->create([
+            $paths = array_values(array_filter((array) ($mappingData['source_paths'] ?? []), fn($value) => $value !== ''));
+            $delimiter = $mappingData['delimiter'] ?? ' ';
+            $isLocked = filter_var($mappingData['is_locked'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $mappingId = $mappingData['mapping_id'] ?? null;
+
+            $payload = [
                 'target_key' => $target,
                 'source_paths' => $paths,
                 'delimiter' => $delimiter,
-            ]);
+                'is_locked' => $isLocked,
+            ];
+
+            if ($mappingId && $mapping = $endpoint->mappings()->find($mappingId)) {
+                $mapping->update($payload);
+                continue;
+            }
+
+            $endpoint->mappings()->create($payload);
         }
 
         return back()->with('success', 'Mapeamento salvo com sucesso.');
