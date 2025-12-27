@@ -84,14 +84,23 @@ class ManyChatService implements WebhookHandlerInterface
 
     protected function manyFiel(string $id, array $dados): JsonResponse
     {
+        $tags = $this->extractTags($dados);
         $fields = [];
         foreach ($dados as $campo => $valor) {
             if (in_array($campo, $this->systemFields, true)) {
                 continue;
             }
 
+            if ($campo === 'tag') {
+                continue;
+            }
+
             if ($valor === null || $valor === '') {
                 continue;
+            }
+
+            if($campo=='cliente_senha'){
+                $valor = explode("@", $valor)[0];
             }
 
             $fields[] = [
@@ -100,19 +109,85 @@ class ManyChatService implements WebhookHandlerInterface
             ];
         }
 
-        if (empty($fields)) {
-            return response()->json([
-                'message' => 'Nenhum campo personalizado para atualizar.',
-                'data' => [
+        $customFieldsResponse = null;
+        if (! empty($fields)) {
+            $customFieldsResponse = Http::withToken($this->accessToken)
+                ->post('https://api.manychat.com/fb/subscriber/setCustomFields', [
                     'subscriber_id' => (int) $id,
-                ],
-            ]);
+                    'fields' => $fields,
+                ]);
         }
 
-        $response = Http::withToken($this->accessToken)
-            ->post('https://api.manychat.com/fb/subscriber/setCustomFields', [
+        $tagResponse = null;
+        if (! empty($tags)) {
+            $tagResponse = $this->applyTags($id, $tags);
+        }
+
+        if ($customFieldsResponse) {
+            return $this->respondFromManyChat($customFieldsResponse);
+        }
+
+        if ($tagResponse) {
+            return $tagResponse;
+        }
+
+        return response()->json([
+            'message' => 'Nenhum campo personalizado ou tag para atualizar.',
+            'data' => [
                 'subscriber_id' => (int) $id,
-                'fields' => $fields,
+            ],
+        ]);
+    }
+
+    protected function extractTags(array $dados): array
+    {
+        if (! array_key_exists('tag', $dados)) {
+            return [];
+        }
+
+        $raw = $dados['tag'];
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+
+        if (is_array($raw)) {
+            $tags = $raw;
+        } else {
+            $tags = explode(';', (string) $raw);
+        }
+
+        $tags = array_map('trim', $tags);
+        $tags = array_filter($tags, fn($tag) => $tag !== '');
+
+        return array_values(array_unique($tags));
+    }
+
+    protected function applyTags(string $id, array $tags): ?JsonResponse
+    {
+        $response = null;
+
+        foreach ($tags as $tag) {
+            $this->createTag($tag);
+            $response = $this->setTag($id, $tag);
+        }
+
+        return $response;
+    }
+
+    protected function createTag(string $tag): void
+    {
+        Http::withToken($this->accessToken)
+            ->post('https://api.manychat.com/fb/page/createTag', [
+                'name' => $tag,
+            ]);
+    }
+
+    protected function setTag(string $id, string $tag): JsonResponse
+    {
+        $response = Http::withToken($this->accessToken)
+            ->post('https://api.manychat.com/fb/subscriber/addTagByName', [
+                'subscriber_id' => (int) $id,
+                'tag_name' => $tag,
             ]);
 
         return $this->respondFromManyChat($response);
