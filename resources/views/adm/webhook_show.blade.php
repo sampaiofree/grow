@@ -151,6 +151,10 @@
                                                 $mapping = $mappings[$field->campo_padrao] ?? null;
                                                 $selectedPaths = $mapping?->source_paths ?? [];
                                                 $delimiter = $mapping?->delimiter ?? ' ';
+                                                $template = $mapping?->value_template ?? '';
+                                                if ($template === '' && ! empty($selectedPaths)) {
+                                                    $template = implode($delimiter, array_map(fn($path) => '{{'.$path.'}}', $selectedPaths));
+                                                }
                                             @endphp
                                             <div class="col-md-6">
                                                 <div class="border rounded p-3 h-100" data-mapping-index="{{ $mappingIndex }}">
@@ -164,38 +168,26 @@
                                                         </div>
                                                         <span class="badge bg-secondary text-dark">Obrigatório</span>
                                                     </div>
-                                                    <div class="mapping-badges mb-2" data-badges="{{ $mappingIndex }}">
-                                                        @foreach($selectedPaths as $path)
-                                                            <span class="badge bg-primary d-inline-flex align-items-center mb-1">
-                                                                <span class="me-1">{{ $path }}</span>
-                                                                <button type="button" class="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" data-remove-badge></button>
-                                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][source_paths][]" value="{{ $path }}">
-                                                            </span>
-                                                        @endforeach
+                                                    <div class="mb-2" data-template-wrapper data-mapping-index="{{ $mappingIndex }}">
+                                                        <label class="form-label small mb-1">Template</label>
+                                                        <div class="form-control template-editor" contenteditable="true" data-template-editor
+                                                             data-mapping-index="{{ $mappingIndex }}" data-placeholder="Digite texto e insira campos"></div>
+                                                        <input type="hidden" name="mappings[{{ $mappingIndex }}][value_template]" data-template-input
+                                                               value="{{ $template }}">
                                                     </div>
                                                     @if(!empty($paths))
                                                         <div class="d-flex align-items-center gap-2">
-                                                            <select class="form-select form-select-sm flex-grow-1" data-mapping-selector data-mapping-index="{{ $mappingIndex }}">
-                                                                <option value="">Selecione um campo</option>
+                                                            <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
+                                                                <option value="">Inserir campo do payload</option>
                                                                 @foreach($paths as $path)
                                                                     <option value="{{ $path }}">{{ $path }}</option>
                                                                 @endforeach
                                                             </select>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-mapping data-mapping-index="{{ $mappingIndex }}">Limpar</button>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
                                                         </div>
                                                     @else
                                                         <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
                                                     @endif
-                                                    <div class="mt-2">
-                                                        <label class="form-label small mb-1">Delimitador</label>
-                                                        <select name="mappings[{{ $mappingIndex }}][delimiter]" class="form-select form-select-sm" style="width: 120px;">
-                                                            @php $delimiters = [' ' => 'Espaço', ',' => 'Vírgula', '-' => 'Hífen']; @endphp
-                                                        <option value="" {{ $delimiter === '' ? 'selected' : '' }}>Nenhum</option>
-                                                        @foreach($delimiters as $char => $label)
-                                                            <option value="{{ $char }}" {{ $delimiter === $char ? 'selected' : '' }}>{{ $label }}</option>
-                                                        @endforeach
-                                                        </select>
-                                                    </div>
                                                 </div>
                                             </div>
                                             @php $mappingIndex++; @endphp
@@ -217,6 +209,14 @@
 
                                 <div data-custom-mappings>
                                     @foreach($customMappings as $mapping)
+                                        @php
+                                            $selectedPaths = $mapping->source_paths ?? [];
+                                            $delimiter = $mapping->delimiter ?? ' ';
+                                            $template = $mapping->value_template ?? '';
+                                            if ($template === '' && ! empty($selectedPaths)) {
+                                                $template = implode($delimiter, array_map(fn($path) => '{{'.$path.'}}', $selectedPaths));
+                                            }
+                                        @endphp
                                         <div class="border rounded p-3 mb-3" data-mapping-index="{{ $mappingIndex }}">
                                             <input type="hidden" name="mappings[{{ $mappingIndex }}][mapping_id]" value="{{ $mapping->id }}">
                                             <input type="hidden" name="mappings[{{ $mappingIndex }}][is_locked]" value="0">
@@ -231,38 +231,26 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div class="mapping-badges mb-2" data-badges="{{ $mappingIndex }}">
-                                                @foreach($mapping->source_paths as $path)
-                                                    <span class="badge bg-primary d-inline-flex align-items-center mb-1">
-                                                        <span class="me-1">{{ $path }}</span>
-                                                        <button type="button" class="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" data-remove-badge></button>
-                                                        <input type="hidden" name="mappings[{{ $mappingIndex }}][source_paths][]" value="{{ $path }}">
-                                                    </span>
-                                                @endforeach
+                                            <div class="mb-2" data-template-wrapper data-mapping-index="{{ $mappingIndex }}">
+                                                <label class="form-label small mb-1">Template</label>
+                                                <div class="form-control template-editor" contenteditable="true" data-template-editor
+                                                     data-mapping-index="{{ $mappingIndex }}" data-placeholder="Digite texto e insira campos"></div>
+                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][value_template]" data-template-input
+                                                       value="{{ $template }}">
                                             </div>
                                             @if(!empty($paths))
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <select class="form-select form-select-sm flex-grow-1" data-mapping-selector data-mapping-index="{{ $mappingIndex }}">
-                                                        <option value="">Selecione um campo</option>
+                                                    <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
+                                                        <option value="">Inserir campo do payload</option>
                                                         @foreach($paths as $path)
                                                             <option value="{{ $path }}">{{ $path }}</option>
                                                         @endforeach
                                                     </select>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-mapping data-mapping-index="{{ $mappingIndex }}">Limpar</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
                                                 </div>
                                             @else
                                                 <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
                                             @endif
-                                            <div class="mt-2">
-                                                <label class="form-label small mb-1">Delimitador</label>
-                                                    <select name="mappings[{{ $mappingIndex }}][delimiter]" class="form-select form-select-sm" style="width: 120px;">
-                                                        @php $delimiters = [' ' => 'Espaço', ',' => 'Vírgula', '-' => 'Hífen']; @endphp
-                                                        <option value="" {{ $mapping->delimiter === '' ? 'selected' : '' }}>Nenhum</option>
-                                                        @foreach($delimiters as $char => $label)
-                                                            <option value="{{ $char }}" {{ $mapping->delimiter === $char ? 'selected' : '' }}>{{ $label }}</option>
-                                                        @endforeach
-                                                    </select>
-                                            </div>
                                         </div>
                                         @php $mappingIndex++; @endphp
                                     @endforeach
@@ -281,26 +269,25 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div class="mapping-badges mb-2" data-badges="__INDEX__"></div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <select class="form-select form-select-sm flex-grow-1" data-mapping-selector data-mapping-index="__INDEX__">
-                                                <option value="">Selecione um campo</option>
-                                                @foreach($paths as $path)
-                                                    <option value="{{ $path }}">{{ $path }}</option>
-                                                @endforeach
-                                            </select>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-mapping data-mapping-index="__INDEX__">Limpar</button>
+                                        <div class="mb-2" data-template-wrapper data-mapping-index="__INDEX__">
+                                            <label class="form-label small mb-1">Template</label>
+                                            <div class="form-control template-editor" contenteditable="true" data-template-editor
+                                                 data-mapping-index="__INDEX__" data-placeholder="Digite texto e insira campos"></div>
+                                            <input type="hidden" name="mappings[__INDEX__][value_template]" data-template-input value="">
                                         </div>
-                                        <div class="mt-2">
-                                            <label class="form-label small mb-1">Delimitador</label>
-                                            <select name="mappings[__INDEX__][delimiter]" class="form-select form-select-sm" style="width: 120px;">
-                                                @php $delimiters = [' ' => 'Espaço', ',' => 'Vírgula', '-' => 'Hífen']; @endphp
-                                                <option value="">Nenhum</option>
-                                                @foreach($delimiters as $char => $label)
-                                                    <option value="{{ $char }}">{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                        @if(!empty($paths))
+                                            <div class="d-flex align-items-center gap-2">
+                                                <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="__INDEX__">
+                                                    <option value="">Inserir campo do payload</option>
+                                                    @foreach($paths as $path)
+                                                        <option value="{{ $path }}">{{ $path }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="__INDEX__">Limpar</button>
+                                            </div>
+                                        @else
+                                            <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
+                                        @endif
                                     </div>
                                 </template>
                             </div>
@@ -311,7 +298,7 @@
                             <button type="submit" class="btn btn-primary">Salvar mapeamento</button>
                         </div>
                     </form>
-                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Se nao mapear um campo, enviaremos vazio.</p>
+                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Use @{{path}} para inserir dados do payload.</p>
                 </div>
             </div>
         </div>
@@ -319,6 +306,25 @@
 </div>
 
 @section('body_end')
+<style>
+.template-editor {
+    min-height: 38px;
+    white-space: pre-wrap;
+}
+
+.template-editor:empty:before {
+    content: attr(data-placeholder);
+    color: #6c757d;
+}
+
+.token-badge {
+    cursor: default;
+}
+
+.token-remove {
+    line-height: 1;
+}
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('mapping-form');
@@ -328,34 +334,115 @@ document.addEventListener('DOMContentLoaded', () => {
     const deletedContainer = document.getElementById('deleted-mappings-container');
     const templateElement = document.getElementById('custom-mapping-template');
 
-    const addBadge = (mappingIndex, value) => {
-        if (!value) return;
-        const badges = document.querySelector(`[data-badges="${mappingIndex}"]`);
-        if (!badges) return;
+    const createToken = (path) => {
+        const token = document.createElement('span');
+        token.className = 'badge bg-primary token-badge d-inline-flex align-items-center mb-1';
+        token.setAttribute('contenteditable', 'false');
+        token.dataset.tokenPath = path;
 
-        if (badges.querySelector(`input[value="${value}"]`)) {
+        const text = document.createElement('span');
+        text.className = 'me-1';
+        text.textContent = path;
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn btn-sm btn-link p-0 text-white token-remove';
+        remove.setAttribute('aria-label', 'Remove');
+        remove.textContent = 'x';
+
+        token.appendChild(text);
+        token.appendChild(remove);
+
+        return token;
+    };
+
+    const renderTemplate = (editor, template) => {
+        editor.innerHTML = '';
+        if (!template) {
             return;
         }
 
-        const span = document.createElement('span');
-        span.className = 'badge bg-primary d-inline-flex align-items-center mb-1';
-        span.innerHTML = `<span class="me-1">${value}</span>
-                          <button type="button" class="btn-close btn-close-white btn-sm ms-1" aria-label="Remove" data-remove-badge></button>`;
+        const splitPattern = new RegExp('(\\{\\{[^}]+\\}\\})', 'g');
+        const tokenPattern = new RegExp('^\\{\\{([^}]+)\\}\\}$');
+        const parts = template.split(splitPattern);
 
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = `mappings[${mappingIndex}][source_paths][]`;
-        input.value = value;
+        parts.forEach((part) => {
+            if (!part) return;
+            const match = part.match(tokenPattern);
+            if (match) {
+                const path = match[1].trim();
+                if (path) {
+                    editor.appendChild(createToken(path));
+                } else {
+                    editor.appendChild(document.createTextNode(part));
+                }
+                return;
+            }
 
-        span.appendChild(input);
-        badges.appendChild(span);
+            editor.appendChild(document.createTextNode(part));
+        });
     };
 
-    const clearMapping = (mappingIndex) => {
-        const badges = document.querySelector(`[data-badges="${mappingIndex}"]`);
-        if (badges) {
-            badges.innerHTML = '';
+    const serializeTemplate = (editor) => {
+        const clone = editor.cloneNode(true);
+        clone.querySelectorAll('[data-token-path]').forEach((el) => {
+            const path = el.dataset.tokenPath || '';
+            const text = document.createTextNode('{' + '{' + path + '}' + '}');
+            el.replaceWith(text);
+        });
+
+        return clone.textContent || '';
+    };
+
+    const syncTemplate = (editor) => {
+        const wrapper = editor.closest('[data-template-wrapper]');
+        if (!wrapper) return;
+        const input = wrapper.querySelector('[data-template-input]');
+        if (!input) return;
+        input.value = serializeTemplate(editor).trim();
+    };
+
+    const insertToken = (editor, path) => {
+        if (!path) return;
+        const token = createToken(path);
+        const space = document.createTextNode(' ');
+        const selection = window.getSelection();
+
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) {
+                editor.append(token, space);
+            } else {
+                range.deleteContents();
+                const fragment = document.createDocumentFragment();
+                fragment.appendChild(token);
+                fragment.appendChild(space);
+                range.insertNode(fragment);
+                range.setStartAfter(space);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        } else {
+            editor.append(token, space);
         }
+
+        syncTemplate(editor);
+    };
+
+    const clearTemplate = (editor) => {
+        editor.innerHTML = '';
+        syncTemplate(editor);
+    };
+
+    const setupEditor = (editor) => {
+        const wrapper = editor.closest('[data-template-wrapper]');
+        if (!wrapper) return;
+        const input = wrapper.querySelector('[data-template-input]');
+        renderTemplate(editor, input ? input.value : '');
+        syncTemplate(editor);
+        editor.addEventListener('input', () => syncTemplate(editor));
+        editor.addEventListener('blur', () => syncTemplate(editor));
     };
 
     const removeCustomField = (button) => {
@@ -383,33 +470,49 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = mappingHtml;
 
         const customContainer = document.querySelector('[data-custom-mappings]');
-        if (customContainer) {
+        if (customContainer && wrapper.firstElementChild) {
             customContainer.appendChild(wrapper.firstElementChild);
+            const editor = customContainer.querySelector(`[data-template-editor][data-mapping-index="${nextIndex}"]`);
+            if (editor) {
+                setupEditor(editor);
+            }
         }
 
         nextIndex++;
         form.dataset.nextIndex = nextIndex;
     };
 
+    form.querySelectorAll('[data-template-editor]').forEach(setupEditor);
+
     document.addEventListener('change', (event) => {
-        const select = event.target.closest('[data-mapping-selector]');
+        const select = event.target.closest('[data-token-select]');
         if (!select) return;
         const index = select.dataset.mappingIndex;
-        addBadge(index, select.value);
+        const editor = form.querySelector(`[data-template-editor][data-mapping-index="${index}"]`);
+        if (editor) {
+            insertToken(editor, select.value);
+        }
         select.value = '';
     });
 
     document.addEventListener('click', (event) => {
-        const removeBadgeButton = event.target.closest('[data-remove-badge]');
-        if (removeBadgeButton) {
-            const badge = removeBadgeButton.closest('.badge');
-            if (badge) badge.remove();
+        const removeToken = event.target.closest('.token-remove');
+        if (removeToken) {
+            const token = removeToken.closest('[data-token-path]');
+            if (token) {
+                const editor = token.closest('[data-template-editor]');
+                token.remove();
+                if (editor) syncTemplate(editor);
+            }
         }
 
-        const clearButton = event.target.closest('[data-clear-mapping]');
+        const clearButton = event.target.closest('[data-clear-template]');
         if (clearButton) {
             const index = clearButton.dataset.mappingIndex;
-            clearMapping(index);
+            const editor = form.querySelector(`[data-template-editor][data-mapping-index="${index}"]`);
+            if (editor) {
+                clearTemplate(editor);
+            }
         }
 
         const customButton = event.target.closest('[data-add-custom-field]');

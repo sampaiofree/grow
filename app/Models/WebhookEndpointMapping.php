@@ -14,6 +14,7 @@ class WebhookEndpointMapping extends Model
         'target_key',
         'source_paths',
         'delimiter',
+        'value_template',
         'is_locked',
     ];
 

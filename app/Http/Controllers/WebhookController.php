@@ -650,14 +650,20 @@ class WebhookController extends Controller
                 continue;
             }
 
-            $paths = $mapping->source_paths ?? [];
-            $paths = is_array($paths) ? $paths : [$paths];
-
             $delimiter = $mapping->delimiter;
             if ($delimiter === null) {
                 $delimiter = ' ';
             }
             $delimiter = (string) $delimiter;
+
+            $templateRaw = (string) ($mapping->value_template ?? '');
+            if (trim($templateRaw) !== '') {
+                $data[$target] = $this->renderTemplate($templateRaw, $payload, $delimiter);
+                continue;
+            }
+
+            $paths = $mapping->source_paths ?? [];
+            $paths = is_array($paths) ? $paths : [$paths];
 
             $values = [];
             foreach ($paths as $path) {
@@ -684,6 +690,33 @@ class WebhookController extends Controller
         }
 
         return $data;
+    }
+
+    private function renderTemplate(string $template, array $payload, string $delimiter): string
+    {
+        return (string) preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($payload, $delimiter) {
+            $path = trim($matches[1] ?? '');
+            if ($path === '') {
+                return '';
+            }
+
+            $values = [];
+            foreach ($this->getValuesByPath($payload, $path) as $value) {
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
+
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+
+            if (empty($values)) {
+                return '';
+            }
+
+            return implode($delimiter, $values);
+        }, $template);
     }
 
     private function getValuesByPath(array $payload, string $path): array

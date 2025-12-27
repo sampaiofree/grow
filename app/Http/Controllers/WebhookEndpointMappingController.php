@@ -18,6 +18,7 @@ class WebhookEndpointMappingController extends Controller
             'mappings.*.source_paths' => 'nullable|array',
             'mappings.*.source_paths.*' => 'string',
             'mappings.*.delimiter' => 'nullable|string|max:5',
+            'mappings.*.value_template' => 'nullable|string',
             'mappings.*.mapping_id' => 'nullable|integer',
             'mappings.*.is_locked' => 'nullable|boolean',
         ]);
@@ -40,11 +41,16 @@ class WebhookEndpointMappingController extends Controller
             $delimiter = $mappingData['delimiter'] ?? ' ';
             $isLocked = filter_var($mappingData['is_locked'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $mappingId = $mappingData['mapping_id'] ?? null;
+            $template = (string) ($mappingData['value_template'] ?? '');
+            if (trim($template) === '' && ! empty($paths)) {
+                $template = $this->buildTemplateFromPaths($paths, (string) $delimiter);
+            }
 
             $payload = [
                 'target_key' => $target,
                 'source_paths' => $paths,
                 'delimiter' => $delimiter,
+                'value_template' => $template,
                 'is_locked' => $isLocked,
             ];
 
@@ -57,5 +63,12 @@ class WebhookEndpointMappingController extends Controller
         }
 
         return back()->with('success', 'Mapeamento salvo com sucesso.');
+    }
+
+    private function buildTemplateFromPaths(array $paths, string $delimiter): string
+    {
+        $tokens = array_map(fn($path) => '{{'.$path.'}}', $paths);
+
+        return implode($delimiter, $tokens);
     }
 }
