@@ -57,6 +57,12 @@ class ManyChatService implements WebhookHandlerInterface
         }
 
         $subscriberData = array_intersect_key($dados, array_flip($this->systemFields));
+        $subscriberData = array_merge([
+            'gender' => 'string',
+            'has_opt_in_sms' => true,
+            'has_opt_in_email' => true,
+            'consent_phrase' => 'string',
+        ], $subscriberData);
 
         $response = Http::withToken($this->accessToken)
             ->post('https://api.manychat.com/fb/subscriber/createSubscriber', $subscriberData);

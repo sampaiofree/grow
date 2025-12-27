@@ -16,6 +16,9 @@ class WebhookEndpoint extends Model
         'name',
         'is_active',
         'last_test_payload',
+        'last_response_status',
+        'last_response_body',
+        'last_response_at',
         'throttle_limit',
         'disabled_at',
         'servico_id',
@@ -27,6 +30,8 @@ class WebhookEndpoint extends Model
             'is_active' => 'boolean',
             'last_test_payload' => 'array',
             'disabled_at' => 'datetime',
+            'last_response_status' => 'integer',
+            'last_response_at' => 'datetime',
         ];
     }
 

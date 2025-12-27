@@ -18,6 +18,7 @@ use App\Services\Contracts\WebhookHandlerInterface;
 class WebhookController extends Controller
 {
     private const PAYLOAD_TEMPLATE_MAX = 20480;
+    private const LAST_RESPONSE_MAX = 20480;
 
     protected $many_access_token;
 
@@ -605,7 +606,10 @@ class WebhookController extends Controller
             return response()->json(['message' => 'Handler invalido para servico'], 422);
         }
 
-        return $handler->handle($endpoint, $data);
+        $response = $handler->handle($endpoint, $data);
+        $this->storeLastResponse($endpoint, $response);
+
+        return $response;
     }
 
     private function extractPayload(Request $request): ?array
@@ -739,6 +743,36 @@ class WebhookController extends Controller
         }
 
         return $encoded;
+    }
+
+    private function storeLastResponse(WebhookEndpoint $endpoint, $response): void
+    {
+        $status = null;
+        if (is_object($response) && method_exists($response, 'getStatusCode')) {
+            $status = (int) $response->getStatusCode();
+        }
+
+        $body = null;
+        if (is_object($response) && method_exists($response, 'getContent')) {
+            $body = $response->getContent();
+        }
+
+        if (! is_string($body)) {
+            $body = json_encode($body);
+        }
+
+        if ($body === false || $body === null) {
+            $body = '';
+        }
+
+        if (strlen($body) > self::LAST_RESPONSE_MAX) {
+            $body = substr($body, 0, self::LAST_RESPONSE_MAX);
+        }
+
+        $endpoint->last_response_status = $status;
+        $endpoint->last_response_body = $body;
+        $endpoint->last_response_at = now();
+        $endpoint->save();
     }
 
     private function getValuesByPath(array $payload, string $path): array
