@@ -301,7 +301,7 @@
                             <button type="submit" class="btn btn-primary">Salvar mapeamento</button>
                         </div>
                     </form>
-                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Use @{{path}} para inserir dados e @{{payload}} para o JSON completo.</p>
+                    <p class="text-muted small mt-2 mb-0">Regra: listas usam indice (ex.: items.0.name). Use @{{path}} para inserir dados e @{{payload}} para o JSON completo.</p>
                 </div>
             </div>
         </div>

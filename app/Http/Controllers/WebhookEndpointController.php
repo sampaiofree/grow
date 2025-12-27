@@ -164,10 +164,14 @@ class WebhookEndpointController extends Controller
         foreach ($payload as $key => $value) {
             $path = $prefix === '' ? $key : $prefix.'.'.$key;
             if (is_array($value)) {
-                // Se for lista numerica, usa * para mapear todos os itens
-                if ($this->isList($value) && isset($value[0])) {
-                    foreach ($this->flattenPayload($value[0], $path.'.*') as $p) {
-                        $paths[] = $p;
+                // Se for lista numerica, inclui os indices (ex.: items.0.name)
+                if ($this->isList($value)) {
+                    foreach ($value as $index => $item) {
+                        if (is_array($item)) {
+                            $paths = array_merge($paths, $this->flattenPayload($item, $path.'.'.$index));
+                        } else {
+                            $paths[] = $path.'.'.$index;
+                        }
                     }
                 } else {
                     $paths = array_merge($paths, $this->flattenPayload($value, $path));
