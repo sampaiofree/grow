@@ -130,6 +130,9 @@
                     <form method="POST" action="{{ route('webhooks.mappings.store', $endpoint) }}" id="mapping-form"
                           data-next-index="{{ $requiredFields->count() + $customMappings->count() }}">
                         @csrf
+                        @php
+                            $tokenPaths = array_values(array_unique(array_merge(['payload'], $paths ?? [])));
+                        @endphp
 
                         <div class="card mb-3">
                             <div class="card-body">
@@ -174,19 +177,19 @@
                                                              data-mapping-index="{{ $mappingIndex }}" data-placeholder="Digite texto e insira campos"></div>
                                                         <input type="hidden" name="mappings[{{ $mappingIndex }}][value_template]" data-template-input
                                                                value="{{ $template }}">
+                                                        <input type="hidden" name="mappings[{{ $mappingIndex }}][delimiter]" value="{{ $delimiter }}">
                                                     </div>
-                                                    @if(!empty($paths))
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
-                                                                <option value="">Inserir campo do payload</option>
-                                                                @foreach($paths as $path)
-                                                                    <option value="{{ $path }}">{{ $path }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
-                                                        </div>
-                                                    @else
-                                                        <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
+                                                            <option value="">Inserir campo do payload</option>
+                                                            @foreach($tokenPaths as $path)
+                                                                <option value="{{ $path }}">{{ $path }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
+                                                    </div>
+                                                    @if(empty($paths))
+                                                        <p class="text-muted small mb-0">Salve um payload de teste para gerar mais campos.</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -237,19 +240,19 @@
                                                      data-mapping-index="{{ $mappingIndex }}" data-placeholder="Digite texto e insira campos"></div>
                                                 <input type="hidden" name="mappings[{{ $mappingIndex }}][value_template]" data-template-input
                                                        value="{{ $template }}">
+                                                <input type="hidden" name="mappings[{{ $mappingIndex }}][delimiter]" value="{{ $delimiter }}">
                                             </div>
-                                            @if(!empty($paths))
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
-                                                        <option value="">Inserir campo do payload</option>
-                                                        @foreach($paths as $path)
-                                                            <option value="{{ $path }}">{{ $path }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
-                                                </div>
-                                            @else
-                                                <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="{{ $mappingIndex }}">
+                                                    <option value="">Inserir campo do payload</option>
+                                                    @foreach($tokenPaths as $path)
+                                                        <option value="{{ $path }}">{{ $path }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="{{ $mappingIndex }}">Limpar</button>
+                                            </div>
+                                            @if(empty($paths))
+                                                <p class="text-muted small mb-0">Salve um payload de teste para gerar mais campos.</p>
                                             @endif
                                         </div>
                                         @php $mappingIndex++; @endphp
@@ -274,19 +277,19 @@
                                             <div class="form-control template-editor" contenteditable="true" data-template-editor
                                                  data-mapping-index="__INDEX__" data-placeholder="Digite texto e insira campos"></div>
                                             <input type="hidden" name="mappings[__INDEX__][value_template]" data-template-input value="">
+                                            <input type="hidden" name="mappings[__INDEX__][delimiter]" value=" ">
                                         </div>
-                                        @if(!empty($paths))
-                                            <div class="d-flex align-items-center gap-2">
-                                                <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="__INDEX__">
-                                                    <option value="">Inserir campo do payload</option>
-                                                    @foreach($paths as $path)
-                                                        <option value="{{ $path }}">{{ $path }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="__INDEX__">Limpar</button>
-                                            </div>
-                                        @else
-                                            <p class="text-muted small mb-0">Salve um payload de teste para gerar campos.</p>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <select class="form-select form-select-sm flex-grow-1" data-token-select data-mapping-index="__INDEX__">
+                                                <option value="">Inserir campo do payload</option>
+                                                @foreach($tokenPaths as $path)
+                                                    <option value="{{ $path }}">{{ $path }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-clear-template data-mapping-index="__INDEX__">Limpar</button>
+                                        </div>
+                                        @if(empty($paths))
+                                            <p class="text-muted small mb-0">Salve um payload de teste para gerar mais campos.</p>
                                         @endif
                                     </div>
                                 </template>
@@ -298,7 +301,7 @@
                             <button type="submit" class="btn btn-primary">Salvar mapeamento</button>
                         </div>
                     </form>
-                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Use @{{path}} para inserir dados do payload.</p>
+                    <p class="text-muted small mt-2 mb-0">Regra: Arrays usam * (ex.: items.*.name). Use @{{path}} para inserir dados e @{{payload}} para o JSON completo.</p>
                 </div>
             </div>
         </div>

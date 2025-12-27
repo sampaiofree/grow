@@ -17,6 +17,8 @@ use App\Services\Contracts\WebhookHandlerInterface;
 
 class WebhookController extends Controller
 {
+    private const PAYLOAD_TEMPLATE_MAX = 20480;
+
     protected $many_access_token;
 
     public function many($dados=null){ 
@@ -694,10 +696,16 @@ class WebhookController extends Controller
 
     private function renderTemplate(string $template, array $payload, string $delimiter): string
     {
-        return (string) preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($payload, $delimiter) {
+        $payloadToken = $this->buildPayloadToken($payload);
+
+        return (string) preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($payload, $delimiter, $payloadToken) {
             $path = trim($matches[1] ?? '');
             if ($path === '') {
                 return '';
+            }
+
+            if ($path === 'payload') {
+                return $payloadToken;
             }
 
             $values = [];
@@ -717,6 +725,20 @@ class WebhookController extends Controller
 
             return implode($delimiter, $values);
         }, $template);
+    }
+
+    private function buildPayloadToken(array $payload): string
+    {
+        $encoded = json_encode($payload);
+        if ($encoded === false) {
+            return '';
+        }
+
+        if (strlen($encoded) > self::PAYLOAD_TEMPLATE_MAX) {
+            return substr($encoded, 0, self::PAYLOAD_TEMPLATE_MAX);
+        }
+
+        return $encoded;
     }
 
     private function getValuesByPath(array $payload, string $path): array
