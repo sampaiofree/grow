@@ -240,6 +240,17 @@ class ManyChatService implements WebhookHandlerInterface
 
     protected function respondFromManyChat($response): JsonResponse
     {
-        return response()->json($response->json(), $response->status());
+        $status = $response->status();
+        $body = $response->body();
+        $decoded = $response->json();
+
+        if (is_array($decoded)) {
+            return response()->json($decoded, $status);
+        }
+
+        return response()->json([
+            'message' => 'Resposta nao-JSON do ManyChat.',
+            'body' => $body,
+        ], $status);
     }
 }
