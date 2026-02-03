@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Services;
 
@@ -37,7 +37,15 @@ class FacilitaUazapiService implements WebhookHandlerInterface
 
         $response = Http::post('https://facilitaiagencia.3f7.org/api/uazapi/messages/text', $data);
 
-        return response()->json($response->json(), $response->status());
+        $decoded = $response->json();
+        if (is_array($decoded)) {
+            return response()->json($decoded, $response->status());
+        }
+
+        return response()->json([
+            'message' => 'Resposta nao-JSON da Uazapi.',
+            'body' => $response->body(),
+        ], $response->status());
     }
 
     protected function normalizePhone(?string $phone): string
