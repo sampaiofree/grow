@@ -29,7 +29,7 @@ class FacilitaUazapiService implements WebhookHandlerInterface
 
         $data = [
             'message' => [
-                'chatid' => $phone,
+                'chatid' => $phone."@s.whatsapp.net",
                 'text' => $prompt,
             ],
             'token' => $token,
