@@ -9,6 +9,7 @@ use App\Http\Controllers\WebhookEndpointController;
 use App\Http\Controllers\WebhookEndpointMappingController;
 use App\Http\Controllers\Admin\ServicoController;
 use App\Http\Controllers\Admin\ServicoCampoObrigatorioController;
+use App\Http\Controllers\Admin\LogFileController;
 
 use App\Http\Controllers\WebhookController;
 
@@ -69,6 +70,19 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])
             ->name('servicos.campos.edit');
         Route::put('servicos/{servico}/campos/{campo}', [ServicoCampoObrigatorioController::class, 'update'])
             ->name('servicos.campos.update');
+    });
+
+Route::middleware(['auth', 'verified', EnsureAdmin::class])
+    ->prefix('adm')
+    ->name('adm.')
+    ->group(function () {
+        Route::get('logs', [LogFileController::class, 'index'])->name('logs.index');
+        Route::get('logs/{path}/download', [LogFileController::class, 'download'])
+            ->where('path', '.*')
+            ->name('logs.download');
+        Route::get('logs/{path}/preview', [LogFileController::class, 'preview'])
+            ->where('path', '.*')
+            ->name('logs.preview');
     });
 
 Route::middleware('auth')->group(function () {
