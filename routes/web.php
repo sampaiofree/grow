@@ -10,6 +10,7 @@ use App\Http\Controllers\WebhookEndpointMappingController;
 use App\Http\Controllers\Admin\ServicoController;
 use App\Http\Controllers\Admin\ServicoCampoObrigatorioController;
 use App\Http\Controllers\Admin\LogFileController;
+use App\Http\Controllers\Admin\UserCadastroController;
 
 use App\Http\Controllers\WebhookController;
 
@@ -76,6 +77,9 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])
     ->prefix('adm')
     ->name('adm.')
     ->group(function () {
+        Route::get('cadastro', [UserCadastroController::class, 'index'])->name('cadastro.index');
+        Route::post('cadastro', [UserCadastroController::class, 'store'])->name('cadastro.store');
+
         Route::get('logs', [LogFileController::class, 'index'])->name('logs.index');
         Route::get('logs/{path}/download', [LogFileController::class, 'download'])
             ->where('path', '.*')

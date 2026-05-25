@@ -539,6 +539,13 @@
 
                 @if(auth()->user()?->is_admin)
                     <li class="side-nav-item">
+                        <a href="{{ route('adm.cadastro.index') }}" class="side-nav-link">
+                            <i class="uil-users-alt"></i>
+                            <span> Cadastro </span>
+                        </a>
+                    </li>
+
+                    <li class="side-nav-item">
                         <a href="{{ route('admin.servicos.index') }}" class="side-nav-link">
                             <i class="uil-cog"></i>
                             <span> Serviços </span>
