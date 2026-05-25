@@ -96,8 +96,3 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-//COMPRA DA ASSINTURA PADRÃO
-Route::get('/comprar_assinatura', function () {
-    return redirect()->away('https://checkout.growtrackeamento.com.br/52840571'); // Substitua com o link externo desejado
-})->name('comprar_assinatura');

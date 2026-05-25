@@ -1,6 +1,4 @@
 <x-guest-layout>
-    <p class="pp">Por favor, utilize as mesmas informações fornecidas no momento da compra da assinatura para garantir o acesso correto ao sistema. </p>
-    <p class="pp">Caso ainda não tenha realizado o pagamento, clique <a href="{{ route('comprar_assinatura') }}" style="font-weight: bolder; color: rgb(0, 0, 182);">AQUI</a> para adquirir sua assinatura.</p>
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -13,7 +11,7 @@
 
         <!-- Email Address -->
         <div id="div_email" class="mt-4">
-            <x-input-label for="email" :value="__('Email - o mesmo usado na compra da assinatura')" />
+            <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
