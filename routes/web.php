@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])
     ->group(function () {
         Route::get('cadastro', [UserCadastroController::class, 'index'])->name('cadastro.index');
         Route::post('cadastro', [UserCadastroController::class, 'store'])->name('cadastro.store');
+        Route::put('cadastro/{user}', [UserCadastroController::class, 'update'])->name('cadastro.update');
+        Route::delete('cadastro/{user}', [UserCadastroController::class, 'destroy'])->name('cadastro.destroy');
 
         Route::get('logs', [LogFileController::class, 'index'])->name('logs.index');
         Route::get('logs/{path}/download', [LogFileController::class, 'download'])
